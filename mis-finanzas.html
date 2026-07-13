@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mis Finanzas — Mar</title>
+<style>
+  :root{
+    --bg:#0f1117; --card:#1a1d27; --card2:#22263344; --border:#2b303f;
+    --text:#e8eaf0; --muted:#8b91a5; --green:#34d399; --red:#f87171;
+    --amber:#fbbf24; --accent:#818cf8; --accent2:#6366f1;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+  body{background:var(--bg);color:var(--text);min-height:100vh;padding:16px;max-width:960px;margin:0 auto}
+  h1{font-size:22px;margin-bottom:4px}
+  h2{font-size:15px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin:24px 0 10px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:16px}
+  .month-nav{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+  .month-nav button{background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 14px;cursor:pointer;font-size:16px}
+  .month-nav span{font-size:17px;font-weight:700;text-transform:capitalize;min-width:180px;text-align:center}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px}
+  .card .lbl{font-size:12px;color:var(--muted);margin-bottom:4px}
+  .card .val{font-size:20px;font-weight:700}
+  .green{color:var(--green)} .red{color:var(--red)} .amber{color:var(--amber)}
+  .bar-wrap{background:var(--border);border-radius:6px;height:8px;margin-top:8px;overflow:hidden}
+  .bar{height:100%;border-radius:6px;background:var(--accent);transition:width .3s}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{text-align:left;color:var(--muted);font-size:12px;font-weight:600;padding:6px 8px;border-bottom:1px solid var(--border)}
+  td{padding:8px;border-bottom:1px solid var(--border)}
+  tr:last-child td{border-bottom:none}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .chip{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;background:var(--card2);border:1px solid var(--border);color:var(--muted)}
+  .paid{opacity:.45;text-decoration:line-through}
+  input[type=checkbox]{width:18px;height:18px;accent-color:var(--green);cursor:pointer}
+  .form{display:flex;flex-wrap:wrap;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px}
+  .form input,.form select{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:14px}
+  .form input[type=number]{width:110px}
+  .form input[type=date]{width:140px}
+  .form input[type=text]{flex:1;min-width:120px}
+  .form select{min-width:110px}
+  .form button{background:var(--accent2);border:none;color:#fff;border-radius:8px;padding:8px 16px;font-weight:600;cursor:pointer;font-size:14px}
+  .form button:hover{background:var(--accent)}
+  .del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px}
+  .del:hover{color:var(--red)}
+  .alert{border-radius:12px;padding:12px 14px;font-size:14px;margin-bottom:12px;border:1px solid}
+  .alert.warn{background:#fbbf2415;border-color:#fbbf2440;color:var(--amber)}
+  .alert.ok{background:#34d39915;border-color:#34d39940;color:var(--green)}
+  .upcoming{display:flex;flex-direction:column;gap:8px}
+  .up-item{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:14px}
+  .up-item .d{color:var(--muted);font-size:12px}
+  .footer-btns{display:flex;gap:8px;margin:28px 0 12px}
+  .footer-btns button{background:var(--card);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px}
+  canvas{width:100%;max-height:220px}
+  .empty{color:var(--muted);font-size:13px;padding:12px;text-align:center}
+  @media(max-width:600px){.cards{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<h1>💰 Mis Finanzas</h1>
+<div class="sub">Ingreso fijo Rappi: $46,408 netos · Variable el día 30 · Otros negocios</div>
+
+<div class="month-nav">
+  <button onclick="chMonth(-1)">‹</button>
+  <span id="monthLabel"></span>
+  <button onclick="chMonth(1)">›</button>
+</div>
+
+<div id="alertBox"></div>
+
+<div class="cards">
+  <div class="card"><div class="lbl">Ingresos del mes</div><div class="val green" id="cIn">$0</div></div>
+  <div class="card"><div class="lbl">Gastos del mes</div><div class="val red" id="cOut">$0</div></div>
+  <div class="card"><div class="lbl">Balance</div><div class="val" id="cBal">$0</div></div>
+  <div class="card"><div class="lbl">Fijos pendientes</div><div class="val amber" id="cPend">$0</div>
+    <div class="bar-wrap"><div class="bar" id="barFijos" style="width:0%"></div></div></div>
+</div>
+
+<h2>Próximos pagos</h2>
+<div class="upcoming" id="upcoming"></div>
+
+<h2>Gastos fijos del mes <span class="chip" id="fixedTotal"></span></h2>
+<div class="card" style="padding:6px 10px">
+<table id="fixedTable">
+  <thead><tr><th style="width:34px"></th><th>Concepto</th><th>Vence</th><th class="num">Monto</th></tr></thead>
+  <tbody></tbody>
+</table>
+</div>
+
+<h2>Registrar movimiento</h2>
+<div class="form">
+  <select id="fType">
+    <option value="gasto">Gasto</option>
+    <option value="ingreso">Ingreso</option>
+  </select>
+  <select id="fCat"></select>
+  <input type="number" id="fAmt" placeholder="Monto" min="0" step="0.01">
+  <input type="date" id="fDate">
+  <input type="text" id="fNote" placeholder="Nota (opcional)">
+  <button onclick="addTx()">Agregar</button>
+</div>
+
+<h2>Movimientos del mes</h2>
+<div class="card" style="padding:6px 10px">
+<table id="txTable">
+  <thead><tr><th>Fecha</th><th>Categoría</th><th>Nota</th><th class="num">Monto</th><th style="width:30px"></th></tr></thead>
+  <tbody></tbody>
+</table>
+<div class="empty" id="txEmpty">Sin movimientos este mes. Registra tu salario y gastos arriba. 👆</div>
+</div>
+
+<h2>Gastos por categoría</h2>
+<div class="card"><canvas id="chart" height="220"></canvas></div>
+
+<h2>Balance últimos 6 meses</h2>
+<div class="card"><canvas id="chart2" height="220"></canvas></div>
+
+<div class="footer-btns">
+  <button onclick="exportData()">⬇ Exportar respaldo</button>
+  <button onclick="document.getElementById('importFile').click()">⬆ Importar respaldo</button>
+  <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)">
+</div>
+<div class="sub">Los datos se guardan en este navegador (localStorage). Exporta un respaldo de vez en cuando.</div>
+
+<script>
+// ===== Config: gastos fijos =====
+// dia: día de vencimiento. everyNMonths: 2 = bimestral (meses pares desde anchorMonth)
+const FIXED = [
+  {id:'renta',    name:'Renta',            amt:21500, dia:1},
+  {id:'bbva',     name:'BBVA (crédito)',   amt:6500,  dia:1},
+  {id:'camioneta',name:'Camioneta',        amt:18000, dia:15},
+  {id:'internet', name:'Internet',         amt:300,   dia:1},
+  {id:'perrita',  name:'Comida perrita',   amt:1600,  dia:1},
+  {id:'wellhub',  name:'Wellhub',          amt:2500,  dia:1},
+  {id:'agualuz',  name:'Agua y luz',       amt:1500,  dia:1, everyNMonths:2, anchorMonth:0}, // meses pares (ene, mar...) — ajusta anchorMonth si toca en impar
+];
+const FOOD_BUDGET = 9000; // ~100/comida x3 al día
+const CATS_GASTO = ['Comida','Transporte','Perrita','Salud','Wellhub multa (250)','Entretenimiento','Ropa','Casa','Otro'];
+const CATS_INGRESO = ['Salario Rappi','Variable Rappi (día 30)','Otros negocios','Otro'];
+
+// ===== Estado =====
+const K='misfinanzas_v1';
+let db = JSON.parse(localStorage.getItem(K)||'{"tx":[],"paid":{}}');
+let cur = new Date(); cur.setDate(1);
+const fmt = n => '$'+Number(n).toLocaleString('es-MX',{maximumFractionDigits:0});
+const mkey = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+const save = () => localStorage.setItem(K, JSON.stringify(db));
+
+function fixedForMonth(d){
+  return FIXED.filter(f=>{
+    if(!f.everyNMonths) return true;
+    const total = d.getFullYear()*12 + d.getMonth();
+    return (total - f.anchorMonth) % f.everyNMonths === 0;
+  });
+}
+
+function chMonth(n){ cur.setMonth(cur.getMonth()+n); render(); }
+
+function addTx(){
+  const amt = parseFloat(document.getElementById('fAmt').value);
+  const date = document.getElementById('fDate').value;
+  if(!amt || !date){ alert('Pon monto y fecha'); return; }
+  db.tx.push({
+    id: Date.now(),
+    type: document.getElementById('fType').value,
+    cat: document.getElementById('fCat').value,
+    amt, date,
+    note: document.getElementById('fNote').value.trim()
+  });
+  save();
+  document.getElementById('fAmt').value='';
+  document.getElementById('fNote').value='';
+  render();
+}
+function delTx(id){ db.tx = db.tx.filter(t=>t.id!==id); save(); render(); }
+function togglePaid(fid){
+  const k = mkey(cur)+'_'+fid;
+  db.paid[k] = !db.paid[k]; save(); render();
+}
+function updateCats(){
+  const t = document.getElementById('fType').value;
+  const cats = t==='gasto'?CATS_GASTO:CATS_INGRESO;
+  document.getElementById('fCat').innerHTML = cats.map(c=>`<option>${c}</option>`).join('');
+}
+document.getElementById('fType').onchange = updateCats;
+
+function render(){
+  const mk = mkey(cur);
+  const now = new Date();
+  document.getElementById('monthLabel').textContent =
+    cur.toLocaleDateString('es-MX',{month:'long',year:'numeric'});
+
+  // fijos del mes
+  const fixed = fixedForMonth(cur);
+  const fixedSum = fixed.reduce((s,f)=>s+f.amt,0);
+  const paidSum = fixed.filter(f=>db.paid[mk+'_'+f.id]).reduce((s,f)=>s+f.amt,0);
+  const pendSum = fixedSum - paidSum;
+
+  // movimientos del mes
+  const txs = db.tx.filter(t=>t.date.slice(0,7)===mk).sort((a,b)=>b.date.localeCompare(a.date));
+  const inSum  = txs.filter(t=>t.type==='ingreso').reduce((s,t)=>s+t.amt,0);
+  const varOut = txs.filter(t=>t.type==='gasto').reduce((s,t)=>s+t.amt,0);
+  const outSum = varOut + paidSum;
+  const bal = inSum - outSum;
+
+  document.getElementById('cIn').textContent = fmt(inSum);
+  document.getElementById('cOut').textContent = fmt(outSum);
+  const cBal = document.getElementById('cBal');
+  cBal.textContent = fmt(bal);
+  cBal.className = 'val '+(bal>=0?'green':'red');
+  document.getElementById('cPend').textContent = fmt(pendSum);
+  document.getElementById('barFijos').style.width = (fixedSum? paidSum/fixedSum*100:0)+'%';
+  document.getElementById('fixedTotal').textContent = 'Total: '+fmt(fixedSum);
+
+  // alerta de compromiso vs ingreso fijo
+  const compromiso = fixedSum + FOOD_BUDGET;
+  const box = document.getElementById('alertBox');
+  if(compromiso > 46408){
+    box.innerHTML = `<div class="alert warn">⚠️ Tus fijos + comida (~${fmt(compromiso)}) superan tu salario fijo neto ($46,408). Necesitas ~${fmt(compromiso-46408)} del variable / otros negocios este mes.</div>`;
+  } else {
+    box.innerHTML = `<div class="alert ok">✅ Tu salario fijo cubre los compromisos del mes.</div>`;
+  }
+
+  // tabla fijos
+  document.querySelector('#fixedTable tbody').innerHTML = fixed
+    .sort((a,b)=>a.dia-b.dia)
+    .map(f=>{
+      const p = db.paid[mk+'_'+f.id];
+      return `<tr class="${p?'paid':''}">
+        <td><input type="checkbox" ${p?'checked':''} onchange="togglePaid('${f.id}')"></td>
+        <td>${f.name}${f.everyNMonths?' <span class="chip">bimestral</span>':''}</td>
+        <td>día ${f.dia}</td>
+        <td class="num">${fmt(f.amt)}</td></tr>`;
+    }).join('');
+
+  // próximos pagos (solo si es el mes actual, mostrar próximos 20 días entre este mes y el siguiente)
+  const up = [];
+  const today = now.getDate();
+  const isCurMonth = mkey(now)===mk;
+  const nextM = new Date(cur); nextM.setMonth(nextM.getMonth()+1);
+  fixed.forEach(f=>{ if(!db.paid[mk+'_'+f.id] && (!isCurMonth || f.dia>=today-3))
+    up.push({name:f.name, amt:f.amt, when:new Date(cur.getFullYear(),cur.getMonth(),f.dia)}); });
+  fixedForMonth(nextM).forEach(f=>up.push({name:f.name, amt:f.amt, when:new Date(nextM.getFullYear(),nextM.getMonth(),f.dia)}));
+  up.push({name:'💵 Cobro variable Rappi', amt:null, when:new Date(cur.getFullYear(),cur.getMonth(),30)});
+  up.sort((a,b)=>a.when-b.when);
+  document.getElementById('upcoming').innerHTML = up.slice(0,5).map(u=>{
+    const days = Math.ceil((u.when - now)/864e5);
+    const tag = isCurMonth ? (days<0?'vencido':days===0?'¡hoy!':`en ${days} día${days===1?'':'s'}`) : '';
+    return `<div class="up-item"><div>${u.name}<div class="d">${u.when.toLocaleDateString('es-MX',{day:'numeric',month:'short'})} ${tag?'· '+tag:''}</div></div><b>${u.amt?fmt(u.amt):'+ variable'}</b></div>`;
+  }).join('');
+
+  // tabla movimientos
+  const tb = document.querySelector('#txTable tbody');
+  tb.innerHTML = txs.map(t=>`<tr>
+    <td>${t.date.slice(8)}/${t.date.slice(5,7)}</td>
+    <td>${t.cat}</td>
+    <td style="color:var(--muted)">${t.note||''}</td>
+    <td class="num ${t.type==='ingreso'?'green':'red'}">${t.type==='ingreso'?'+':'−'}${fmt(t.amt)}</td>
+    <td><button class="del" onclick="delTx(${t.id})">✕</button></td></tr>`).join('');
+  document.getElementById('txEmpty').style.display = txs.length?'none':'block';
+
+  drawCatChart(txs, paidSum, fixed, mk);
+  drawTrendChart();
+}
+
+// ===== Gráficas (canvas nativo) =====
+function drawCatChart(txs, paidSum, fixed, mk){
+  const c = document.getElementById('chart'), ctx = c.getContext('2d');
+  c.width = c.offsetWidth*2; c.height = 440; ctx.scale(2,2);
+  const data = {};
+  txs.filter(t=>t.type==='gasto').forEach(t=>data[t.cat]=(data[t.cat]||0)+t.amt);
+  fixed.filter(f=>db.paid[mk+'_'+f.id]).forEach(f=>data[f.name]=(data[f.name]||0)+f.amt);
+  const entries = Object.entries(data).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  ctx.clearRect(0,0,c.width,c.height);
+  if(!entries.length){ ctx.fillStyle='#8b91a5'; ctx.font='13px sans-serif'; ctx.fillText('Sin gastos registrados este mes',20,110); return; }
+  const max = entries[0][1], W = c.offsetWidth, bh=20, gap=6;
+  entries.forEach(([name,val],i)=>{
+    const y = 10+i*(bh+gap);
+    ctx.fillStyle='#e8eaf0'; ctx.font='11px sans-serif';
+    ctx.fillText(name.length>18?name.slice(0,17)+'…':name, 8, y+14);
+    const bw = Math.max(4,(val/max)*(W-260));
+    ctx.fillStyle='#6366f1'; ctx.beginPath(); ctx.roundRect(140, y+2, bw, bh-4, 4); ctx.fill();
+    ctx.fillStyle='#8b91a5'; ctx.fillText(fmt(val), 146+bw, y+14);
+  });
+}
+function drawTrendChart(){
+  const c = document.getElementById('chart2'), ctx = c.getContext('2d');
+  c.width = c.offsetWidth*2; c.height = 440; ctx.scale(2,2);
+  ctx.clearRect(0,0,c.width,c.height);
+  const months=[];
+  for(let i=5;i>=0;i--){ const d=new Date(cur); d.setMonth(d.getMonth()-i); months.push(d); }
+  const bals = months.map(d=>{
+    const mk = mkey(d);
+    const txs = db.tx.filter(t=>t.date.slice(0,7)===mk);
+    const inS = txs.filter(t=>t.type==='ingreso').reduce((s,t)=>s+t.amt,0);
+    const paid = fixedForMonth(d).filter(f=>db.paid[mk+'_'+f.id]).reduce((s,f)=>s+f.amt,0);
+    const outS = txs.filter(t=>t.type==='gasto').reduce((s,t)=>s+t.amt,0)+paid;
+    return inS-outS;
+  });
+  const W=c.offsetWidth, H=200, maxAbs=Math.max(1000,...bals.map(Math.abs));
+  const bw=(W-40)/6*0.55, mid=H/2;
+  ctx.strokeStyle='#2b303f'; ctx.beginPath(); ctx.moveTo(10,mid); ctx.lineTo(W-10,mid); ctx.stroke();
+  months.forEach((d,i)=>{
+    const x=20+i*(W-40)/6+((W-40)/6-bw)/2;
+    const h=(bals[i]/maxAbs)*(H/2-25);
+    ctx.fillStyle=bals[i]>=0?'#34d399':'#f87171';
+    ctx.beginPath(); ctx.roundRect(x, h>=0?mid-h:mid, bw, Math.max(2,Math.abs(h)), 3); ctx.fill();
+    ctx.fillStyle='#8b91a5'; ctx.font='10px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(d.toLocaleDateString('es-MX',{month:'short'}), x+bw/2, H-4);
+    if(bals[i]!==0) ctx.fillText(fmt(bals[i]), x+bw/2, h>=0?mid-h-6:mid+Math.abs(h)+12);
+    ctx.textAlign='left';
+  });
+}
+
+// ===== Export / Import =====
+function exportData(){
+  const blob = new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'misfinanzas_respaldo_'+mkey(new Date())+'.json';
+  a.click();
+}
+function importData(inp){
+  const r = new FileReader();
+  r.onload = e => { try{ db = JSON.parse(e.target.result); save(); render(); alert('Respaldo importado ✅'); }catch(err){ alert('Archivo inválido'); } };
+  r.readAsText(inp.files[0]);
+  inp.value='';
+}
+
+// init
+document.getElementById('fDate').value = new Date().toISOString().slice(0,10);
+updateCats();
+render();
+</script>
+</body>
+</html>
